@@ -1,0 +1,45 @@
+% Change the layout here. The double angle-bracket markers are filled in by the app.
+\documentclass[10pt,a4paper]{article}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{titlesec}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage[a4paper,top=12mm,bottom=12mm,left=15mm,right=15mm]{geometry}
+\usepackage[hidelinks]{hyperref}
+\input{glyphtounicode}
+\pdfgentounicode=1 % machine-readable text for application tracking systems
+\usepackage{helvet}
+\renewcommand*\familydefault{\sfdefault}
+
+\definecolor{light-grey}{gray}{0.83}
+\definecolor{dark-grey}{gray}{0.35}
+\definecolor{text-grey}{gray}{0.08}
+
+\pagestyle{empty}
+\raggedbottom
+\raggedright
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0pt}
+
+% All spacing lives here: bullets 1.5pt < heading to bullets 3pt < entries 10pt < sections 12pt
+\newif\iffirstentry
+\titleformat{\section}{\bfseries\raggedright\large}{}{0em}{}[\color{light-grey}{\titlerule[1.5pt]}\global\firstentrytrue]
+\titlespacing{\section}{0pt}{12pt}{5pt}
+\newcommand{\entry}{\par\iffirstentry\global\firstentryfalse\else\addvspace{10pt}\fi}
+% heading, dates, role and place
+\newcommand{\jobhead}[3]{\textbf{#1}\hfill\textcolor{dark-grey}{#2}\par\textit{#3}\par}
+
+\color{text-grey}
+
+\begin{document}
+\small
+\begin{center}
+  {\Huge\bfseries <<NAME>>}\\[3pt]
+  {\large\textcolor{dark-grey}{<<HEADLINE>>}}\\[6pt]
+  \small <<CONTACT>>
+\end{center}
+
+<<BODY>>
+
+\end{document}
