@@ -1,0 +1,273 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Job Tailor</title>
+<style>
+  :root {
+    --bg: #f6f6f4; --panel: #fff; --line: #e1e1dc; --text: #1c1c1e; --muted: #68686e;
+    --accent: #2f5fd0; --accent-text: #fff; --good: #1a7f4e; --warn: #a15c00; --bad: #b3261e; --warn-bg: #fff4e0;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #151517; --panel: #1e1e21; --line: #313136; --text: #ececee; --muted: #9b9ba3;
+      --accent: #7ea2ff; --accent-text: #10131c; --good: #5fd19b; --warn: #f0b860; --bad: #ff8a80; --warn-bg: #33280f;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  .wrap { max-width: 860px; margin: 0 auto; padding: 24px 16px 60px; }
+  header { display: flex; align-items: baseline; gap: 20px; flex-wrap: wrap; margin-bottom: 20px; }
+  h1 { font-size: 20px; margin: 0; }
+  nav { display: flex; gap: 4px; }
+  nav button { background: none; border: 0; color: var(--muted); padding: 6px 12px; font: inherit; cursor: pointer; border-radius: 6px; }
+  nav button.on { background: var(--panel); color: var(--text); box-shadow: 0 0 0 1px var(--line); }
+  .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 18px; margin-bottom: 14px; }
+  h2 { font-size: 15px; margin: 0 0 12px; }
+  label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 10px; }
+  input, textarea, select { display: block; width: 100%; margin-top: 3px; padding: 8px 10px; font: inherit; color: var(--text); background: var(--bg); border: 1px solid var(--line); border-radius: 6px; }
+  textarea { resize: vertical; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 0 14px; }
+  button.go, a.go { background: var(--accent); color: var(--accent-text); border: 0; padding: 8px 14px; border-radius: 6px; font: 600 14px system-ui, sans-serif; cursor: pointer; text-decoration: none; display: inline-block; }
+  button.plain, a.plain { background: none; color: var(--text); border: 1px solid var(--line); padding: 7px 12px; border-radius: 6px; font: inherit; font-size: 14px; cursor: pointer; text-decoration: none; display: inline-block; }
+  button:disabled { opacity: .55; cursor: default; }
+  .hint { font-size: 13px; color: var(--muted); margin: 0 0 12px; }
+  .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .job-head { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  .job-title { font-weight: 600; }
+  .job-sub { color: var(--muted); font-size: 14px; }
+  .fit { font-size: 12px; font-weight: 600; border: 1px solid var(--line); border-radius: 999px; padding: 1px 9px; white-space: nowrap; }
+  .fit.hi { color: var(--good); } .fit.lo { color: var(--bad); }
+  .job select { width: auto; display: inline-block; margin: 0; padding: 5px 8px; font-size: 13px; }
+  .job .row { margin-top: 10px; }
+  .err { color: var(--bad); font-size: 14px; margin-top: 8px; }
+  .warn { background: var(--warn-bg); color: var(--warn); font-size: 14px; padding: 8px 10px; border-radius: 6px; margin-top: 10px; }
+  .status { font-size: 13px; color: var(--muted); }
+  details { margin-top: 10px; font-size: 14px; }
+  details ul { margin: 6px 0; padding-left: 20px; }
+  .banner { background: var(--warn-bg); color: var(--warn); padding: 10px 14px; border-radius: 8px; margin-bottom: 14px; font-size: 14px; }
+  .empty { text-align: center; color: var(--muted); padding: 32px 16px; }
+  .link { color: var(--accent); background: none; border: 0; padding: 0; font: inherit; cursor: pointer; text-decoration: underline; }
+  @media (max-width: 500px) { .wrap { padding: 16px 16px 48px; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Job Tailor</h1>
+    <nav>
+      <button data-tab="jobs" class="on">Jobs</button>
+      <button data-tab="profile">Profile</button>
+      <button data-tab="settings">Settings</button>
+    </nav>
+  </header>
+  <div id="banner"></div>
+
+  <section id="tab-jobs">
+    <form class="panel" id="jobForm">
+      <h2>Add a job</h2>
+      <div class="grid">
+        <label>Job title <input name="title" required></label>
+        <label>Company <input name="company" required></label>
+        <label>Location <input name="location"></label>
+        <label>Link to the posting <input name="url" type="url" placeholder="https://"></label>
+      </div>
+      <label>Posting text (copy everything from the job page)
+        <textarea name="description" rows="7" required></textarea></label>
+      <label>Anything Claude should know (optional)
+        <input name="notes" placeholder="e.g. a friend works there, or focus on my data work"></label>
+      <div class="row">
+        <button class="go" name="gen" value="1">Add and generate</button>
+        <button class="plain" type="submit">Just add</button>
+      </div>
+    </form>
+    <div id="jobs"></div>
+  </section>
+
+  <section id="tab-profile" hidden>
+    <form class="panel" id="profileForm">
+      <h2>You</h2>
+      <div class="grid">
+        <label>Full name <input name="name"></label>
+        <label>Email <input name="email" type="email"></label>
+        <label>Phone <input name="phone"></label>
+        <label>City, country <input name="location"></label>
+        <label>LinkedIn <input name="linkedin"></label>
+        <label>GitHub <input name="github"></label>
+        <label>Website <input name="website"></label>
+      </div>
+      <label>Availability (put in every letter, optional)
+        <input name="availability" placeholder="available to start from March 2027"></label>
+      <label>Work permit sentence (ends every letter word for word, optional)
+        <textarea name="work_authorization" rows="2"></textarea></label>
+      <h2 style="margin-top:8px">Your CV</h2>
+      <p class="hint">This is the only source of facts. Tailored versions can't claim anything that isn't here, so include everything, even if it's long.</p>
+      <label>Upload a PDF, DOCX or TXT, or paste below
+        <input type="file" id="cvFile" accept=".pdf,.docx,.txt,.md,.tex"></label>
+      <div class="status" id="cvStatus" role="status"></div>
+      <label>CV text <textarea name="cv_text" rows="14"></textarea></label>
+      <label>Writing preferences (optional)
+        <textarea name="preferences" rows="2" placeholder="e.g. keep it short, British spelling, always include my thesis"></textarea></label>
+      <div class="row"><button class="go">Save</button><span class="status" id="profileStatus" role="status"></span></div>
+    </form>
+  </section>
+
+  <section id="tab-settings" hidden>
+    <form class="panel" id="settingsForm">
+      <h2>Claude access</h2>
+      <p class="hint" id="accessState"></p>
+      <p class="hint">Use either one. An <b>API key</b> from console.anthropic.com is paid per use. Or install <b>Claude Code</b>, run <code>claude</code> once and log in; the app then uses it automatically and no key is needed.</p>
+      <label>API key <input name="api_key" type="password" autocomplete="off" placeholder="sk-ant-..."></label>
+      <label>Model (API key only) <select name="model" id="modelSel"></select></label>
+      <div class="row">
+        <button class="go">Save</button>
+        <button class="plain" type="button" id="clearKey">Remove key</button>
+        <span class="status" id="settingsStatus" role="status"></span>
+      </div>
+    </form>
+  </section>
+</div>
+
+<script>
+let state = null, editingProfile = false;
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const safeUrl = u => /^https?:\/\//i.test(u || "") ? u : "";
+
+async function post(path, data) {
+  const r = await fetch(path, {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(data || {})});
+  const out = await r.json();
+  if (!r.ok) throw new Error(out.error || "Something went wrong");
+  return out;
+}
+
+function showTab(name) {
+  document.querySelectorAll("nav button").forEach(b => b.classList.toggle("on", b.dataset.tab === name));
+  document.querySelectorAll("section").forEach(s => s.hidden = s.id !== "tab-" + name);
+}
+document.querySelectorAll("nav button").forEach(b => b.onclick = () => showTab(b.dataset.tab));
+
+function renderBanner() {
+  const p = state.profile, s = state.settings, items = [];
+  if (!p.name || !p.cv_text) items.push(`Add your name and CV on the <button class="link" data-go="profile">Profile</button> tab.`);
+  if (!s.has_key && !s.has_cli) items.push(`Connect Claude on the <button class="link" data-go="settings">Settings</button> tab.`);
+  $("#banner").innerHTML = items.length ? `<div class="banner">${items.join(" ")}</div>` : "";
+  document.querySelectorAll("[data-go]").forEach(b => b.onclick = () => showTab(b.dataset.go));
+}
+
+function fitPill(j) {
+  if (!j.fit) return "";
+  return `<span class="fit ${j.fit >= 4 ? "hi" : j.fit <= 2 ? "lo" : ""}">Fit ${j.fit}/5</span>`;
+}
+
+function jobCard(j) {
+  const r = j.result, busy = j.gen === "queued" || j.gen === "running";
+  const opts = state.statuses.map(s => `<option ${s === j.status ? "selected" : ""}>${s}</option>`).join("");
+  const url = safeUrl(j.url);
+  const details = r ? `<details data-id="${j.id}"><summary>Why this fit</summary>
+      <p>${esc(r.fit_reason)}</p>
+      ${r.matches?.length ? `<b>Matches</b><ul>${r.matches.map(m => `<li>${esc(m.requirement)}: ${esc(m.evidence)}</li>`).join("")}</ul>` : ""}
+      ${r.gaps?.length ? `<b>Gaps</b><ul>${r.gaps.map(g => `<li>${esc(g)}</li>`).join("")}</ul>` : ""}
+    </details>` : "";
+  const warn = j.warnings?.length ? `<div class="warn"><b>Check before sending:</b> ${j.warnings.map(esc).join("; ")}</div>` : "";
+  return `<div class="panel job">
+    <div class="job-head">
+      <div><div class="job-title">${url ? `<a href="${esc(url)}" target="_blank" rel="noopener">${esc(j.title)}</a>` : esc(j.title)}</div>
+        <div class="job-sub">${esc(j.company)}${j.location ? " · " + esc(j.location) : ""}</div></div>
+      <div class="row" style="margin:0">${fitPill(j)}<select data-status="${j.id}" aria-label="Status">${opts}</select></div>
+    </div>
+    <div class="row">
+      <button class="${r ? "plain" : "go"}" data-gen="${j.id}" ${busy ? "disabled" : ""}>${busy ? "Generating…" : r ? "Regenerate" : "Generate"}</button>
+      ${r ? `<a class="go" href="/doc/${j.id}/cv" target="_blank">CV</a><a class="go" href="/doc/${j.id}/letter" target="_blank">Cover letter</a>` : ""}
+      <button class="plain" data-del="${j.id}">Delete</button>
+    </div>
+    ${j.gen_error ? `<div class="err">${esc(j.gen_error)}</div>` : ""}${warn}${details}
+  </div>`;
+}
+
+function renderJobs() {
+  const box = $("#jobs"), open = new Set([...box.querySelectorAll("details[open]")].map(d => d.dataset.id));
+  box.innerHTML = state.jobs.length ? state.jobs.map(jobCard).join("") : `<div class="empty">No jobs yet. Add your first one above.</div>`;
+  box.querySelectorAll("details").forEach(d => d.open = open.has(d.dataset.id));
+  box.querySelectorAll("[data-gen]").forEach(b => b.onclick = async () => { await post(`/api/jobs/${b.dataset.gen}/generate`); refresh(); });
+  box.querySelectorAll("[data-del]").forEach(b => b.onclick = async () => {
+    if (confirm("Delete this job and its generated documents?")) { await post(`/api/jobs/${b.dataset.del}/delete`); refresh(); }
+  });
+  box.querySelectorAll("[data-status]").forEach(s => s.onchange = () => post(`/api/jobs/${s.dataset.status}`, {status: s.value}));
+}
+
+function fillProfile() {
+  if (editingProfile) return;
+  const f = $("#profileForm");
+  for (const [k, v] of Object.entries(state.profile)) if (f.elements[k]) f.elements[k].value = v;
+}
+
+function renderSettings() {
+  const s = state.settings;
+  $("#accessState").textContent = s.has_key ? "Connected with an API key." : s.has_cli ? "Connected through Claude Code." : "Not connected yet.";
+  $("#clearKey").hidden = !s.has_key;
+  $("#modelSel").innerHTML = s.models.map(m => `<option ${m === s.model ? "selected" : ""}>${m}</option>`).join("");
+}
+
+async function refresh() {
+  const prev = state && JSON.stringify(state.jobs);
+  state = await (await fetch("/api/state")).json();
+  if (JSON.stringify(state.jobs) !== prev) renderJobs();
+  renderBanner();
+  fillProfile();
+  if ($("#tab-settings").hidden) renderSettings();
+  if (state.jobs.some(j => j.gen === "queued" || j.gen === "running")) setTimeout(refresh, 2000);
+}
+
+$("#jobForm").onsubmit = async e => {
+  e.preventDefault();
+  const f = e.target, gen = e.submitter?.name === "gen";
+  const { id } = await post("/api/jobs", Object.fromEntries(new FormData(f)));
+  if (gen) await post(`/api/jobs/${id}/generate`);
+  f.reset();
+  refresh();
+};
+
+$("#profileForm").addEventListener("input", () => editingProfile = true);
+$("#profileForm").onsubmit = async e => {
+  e.preventDefault();
+  await post("/api/profile", Object.fromEntries(new FormData(e.target)));
+  editingProfile = false;
+  $("#profileStatus").textContent = "Saved";
+  setTimeout(() => $("#profileStatus").textContent = "", 2000);
+  refresh();
+};
+
+$("#cvFile").onchange = e => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const status = $("#cvStatus");
+  status.textContent = "Reading your CV…";
+  const reader = new FileReader();
+  reader.onload = async () => {
+    try {
+      const { text } = await post("/api/cv", {name: file.name, data: reader.result.split(",")[1]});
+      $("#profileForm").elements.cv_text.value = text;
+      editingProfile = true;
+      status.textContent = "Done. Check the text below, then press Save.";
+    } catch (err) { status.textContent = err.message; }
+  };
+  reader.readAsDataURL(file);
+};
+
+$("#settingsForm").onsubmit = async e => {
+  e.preventDefault();
+  await post("/api/settings", Object.fromEntries(new FormData(e.target)));
+  e.target.elements.api_key.value = "";
+  $("#settingsStatus").textContent = "Saved";
+  setTimeout(() => $("#settingsStatus").textContent = "", 2000);
+  await refresh();
+  renderSettings();
+};
+$("#clearKey").onclick = async () => { await post("/api/settings", {clear_key: true}); await refresh(); renderSettings(); };
+
+refresh();
+</script>
+</body>
+</html>
